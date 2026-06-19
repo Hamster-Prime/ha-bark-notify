@@ -1,0 +1,103 @@
+send:
+  name: Send Bark push
+  description: Send a push notification via Bark with full parameter support.
+  target:
+    entity:
+      integration: bark
+      domain: [button, sensor]
+  fields:
+    message:
+      name: Message
+      description: Push body text.
+      required: true
+      example: "Hello"
+      selector:
+        text: {}
+    title:
+      name: Title
+      selector:
+        text: {}
+    subtitle:
+      name: Subtitle
+      selector:
+        text: {}
+    markdown:
+      name: Markdown body
+      description: Overrides "message" if set.
+      selector:
+        text:
+          multiline: true
+    level:
+      name: Level
+      selector:
+        select:
+          options: ["critical", "active", "timeSensitive", "passive"]
+    volume:
+      name: Volume
+      description: Only effective when level=critical (0-10).
+      selector:
+        number:
+          min: 0
+          max: 10
+          step: 1
+    badge:
+      name: Badge
+      selector:
+        number:
+          min: 0
+          mode: box
+    call:
+      name: Repeating ringtone
+      selector:
+        boolean: {}
+    auto_copy:
+      name: Auto copy
+      selector:
+        boolean: {}
+    copy:
+      name: Copy content
+      selector:
+        text: {}
+    sound:
+      name: Sound
+      selector:
+        text: {}
+    icon:
+      name: Icon URL
+      selector:
+        text: {}
+    image:
+      name: Image URL
+      selector:
+        text: {}
+    group:
+      name: Group
+      selector:
+        text: {}
+    is_archive:
+      name: Archive
+      selector:
+        boolean: {}
+    ttl:
+      name: TTL (seconds)
+      selector:
+        number:
+          min: 0
+          mode: box
+    url:
+      name: Click URL
+      selector:
+        text: {}
+    action:
+      name: Action
+      selector:
+        select:
+          options: ["alert"]
+    id:
+      name: Notification ID
+      selector:
+        text: {}
+    delete:
+      name: Delete
+      selector:
+        boolean: {}

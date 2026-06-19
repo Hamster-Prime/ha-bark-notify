@@ -22,6 +22,7 @@ from .const import (
     RUNTIME_TIME,
     STATUS_UNKNOWN,
 )
+from .service import async_setup_services
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -45,6 +46,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Platforms (button, sensor) are enabled in Tasks 11/12 once entities exist.
     # await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    await async_setup_services(hass)
     return True
 
 
