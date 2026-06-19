@@ -44,8 +44,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         RUNTIME_TIME: None,
     }
 
-    # Platforms (button, sensor) are enabled in Tasks 11/12 once entities exist.
-    # await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    await hass.config_entries.async_forward_entry_setups(
+        entry, [p for p in PLATFORMS if p == "button"]
+    )
     await async_setup_services(hass)
     return True
 
