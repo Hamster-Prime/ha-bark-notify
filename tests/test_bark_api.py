@@ -129,7 +129,9 @@ async def test_encrypted_push_roundtrip_decrypts(client_to, bark_server_received
         )
         await client.push(BarkPayload(body="secret", title="t"))
     sent = bark_server_received["json"]
-    iv_bytes = base64.b64decode(sent["iv"])
+    # Bark wire format: iv is a raw 16-char ASCII string, not base64.
+    assert len(sent["iv"]) == 16
+    iv_bytes = sent["iv"].encode("utf-8")
     cipher = Cipher(algorithms.AES(ENC_KEY.encode("utf-8")), modes.CBC(iv_bytes))
     decryptor = cipher.decryptor()
     padded = decryptor.update(base64.b64decode(sent["ciphertext"])) + decryptor.finalize()

@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import json
-import os
+import logging
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any
@@ -127,32 +127,53 @@ class EncryptionAlgorithm(str, Enum):
 def encrypt_payload(
     payload_json: str,
     key: str,
-    iv: bytes | None = None,
+    iv: str | None = None,
 ) -> tuple[str, str]:
     """Encrypt payload_json with AES-128-CBC.
 
+    The Bark iOS app transmits and receives the IV as a raw 16-character ASCII
+    string (e.g. ``ORv7kkSmTsg6cjfh``), using its ASCII bytes directly as the
+    AES-CBC IV. We must match that wire format — base64-encoding the IV breaks
+    decryption in the app (it would treat the 24-char base64 as IV bytes,
+    violating AES-128's 16-byte IV requirement).
+
     Args:
         payload_json: plaintext JSON string to encrypt.
-        key: 16-character ASCII key (AES-128).
-        iv: optional fixed IV (for testing interop). Random if omitted.
+        key: 16-character ASCII key (AES-128). Its UTF-8 bytes are the AES key.
+        iv: optional fixed 16-character ASCII IV (mainly for interop tests).
+            A random 16-char alphanumeric IV is generated when omitted.
 
     Returns:
-        Tuple of (ciphertext_b64, iv_b64).
+        Tuple of ``(ciphertext_base64, iv_ascii_string)``. Send ``iv_ascii_string``
+        verbatim in the request's ``iv`` field — do NOT base64-encode it.
     """
     key_bytes = key.encode("utf-8")
     if len(key_bytes) != 16:
         raise BarkEncryptionError("encryption key must encode to exactly 16 bytes (AES-128)")
     if iv is None:
-        iv = os.urandom(16)
-    cipher = Cipher(algorithms.AES(key_bytes), modes.CBC(iv))
+        iv = _generate_random_iv()
+    iv_bytes = iv.encode("utf-8")
+    if len(iv_bytes) != 16:
+        raise BarkEncryptionError("iv must be exactly 16 ASCII characters")
+    cipher = Cipher(algorithms.AES(key_bytes), modes.CBC(iv_bytes))
     encryptor = cipher.encryptor()
     padder = PKCS7(algorithms.AES.block_size).padder()
     padded = padder.update(payload_json.encode("utf-8")) + padder.finalize()
     ciphertext = encryptor.update(padded) + encryptor.finalize()
-    return (
-        base64.b64encode(ciphertext).decode(),
-        base64.b64encode(iv).decode(),
-    )
+    return base64.b64encode(ciphertext).decode(), iv
+
+
+def _generate_random_iv() -> str:
+    """Generate a random 16-character alphanumeric IV.
+
+    Matches the format of IVs shown in the Bark app (e.g. ``ORv7kkSmTsg6cjfh``).
+    62^16 ≈ 9.5e28 possibilities (~95 bits of entropy).
+    """
+    import secrets
+    import string
+
+    alphabet = string.ascii_letters + string.digits
+    return "".join(secrets.choice(alphabet) for _ in range(16))
 
 
 @dataclass
