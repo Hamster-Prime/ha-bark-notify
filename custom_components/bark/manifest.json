@@ -1,9 +1,9 @@
 {
   "domain": "bark",
   "name": "Bark",
-  "documentation": "https://github.com/your-github-username/ha-bark-notify",
-  "issue_tracker": "https://github.com/your-github-username/ha-bark-notify/issues",
-  "codeowners": ["@your-github-username"],
+  "documentation": "https://github.com/Hamster-Prime/ha-bark-notify",
+  "issue_tracker": "https://github.com/Hamster-Prime/ha-bark-notify/issues",
+  "codeowners": ["@Hamster-Prime"],
   "config_flow": true,
   "iot_class": "cloud_push",
   "requirements": [],
