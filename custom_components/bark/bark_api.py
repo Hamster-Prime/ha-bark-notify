@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import base64
+import json
 import os
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
+import aiohttp
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.padding import PKCS7
 
@@ -150,3 +152,73 @@ def encrypt_payload(
         base64.b64encode(ciphertext).decode(),
         base64.b64encode(iv).decode(),
     )
+
+
+@dataclass
+class BarkResponse:
+    """Bark server response."""
+
+    code: int
+    message: str
+    timestamp: int | None = None
+
+
+class BarkClient:
+    """Async Bark push client."""
+
+    def __init__(
+        self,
+        server_url: str,
+        device_key: str,
+        encryption: str = "none",
+        encryption_key: str | None = None,
+        session: aiohttp.ClientSession | None = None,
+        timeout: int = 10,
+    ) -> None:
+        self._server_url = server_url.rstrip("/")
+        self._device_key = device_key
+        self._encryption = encryption
+        self._encryption_key = encryption_key
+        self._timeout = timeout
+        self._session = session
+        self._owns_session = session is None
+
+    def _get_session(self) -> aiohttp.ClientSession:
+        if self._session is None:
+            self._session = aiohttp.ClientSession()
+            self._owns_session = True
+        return self._session
+
+    async def async_close(self) -> None:
+        if self._session is not None and self._owns_session:
+            await self._session.close()
+            self._session = None
+
+    async def push(self, payload: BarkPayload) -> BarkResponse:
+        body = payload.to_bark_dict()
+        if self._encryption == EncryptionAlgorithm.AES_128_CBC.value:
+            payload_json = json.dumps(body, ensure_ascii=False, separators=(",", ":"))
+            ciphertext, iv = encrypt_payload(payload_json, self._encryption_key or "")
+            body = {"ciphertext": ciphertext, "iv": iv}
+        url = f"{self._server_url}/{self._device_key}"
+        session = self._get_session()
+        try:
+            async with session.post(
+                url,
+                json=body,
+                headers={"Content-Type": "application/json"},
+                timeout=aiohttp.ClientTimeout(total=self._timeout),
+            ) as resp:
+                text = await resp.text()
+        except aiohttp.ClientError as err:
+            raise BarkConnectionError(f"failed to reach bark server: {err}") from err
+        try:
+            data = json.loads(text)
+        except json.JSONDecodeError:
+            data = {}
+        code = int(data.get("code", resp.status))
+        message = data.get("message", "")
+        timestamp = data.get("timestamp")
+        if resp.status == 200 and code == 200:
+            return BarkResponse(code=code, message=message, timestamp=timestamp)
+        raise BarkPushError(code, message or text)
