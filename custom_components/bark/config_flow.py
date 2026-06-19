@@ -95,6 +95,8 @@ class BarkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 except BarkError:
                     err = "test_push_failed"
             if err is None:
+                await self.async_set_unique_id(user_input[CONF_DEVICE_KEY])
+                self._abort_if_unique_id_configured()
                 return self.async_create_entry(
                     title=user_input[CONF_NAME], data=user_input
                 )

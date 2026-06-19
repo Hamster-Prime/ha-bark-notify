@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import entity_registry as er, device_registry as dr
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.bark.bark_api import BarkAuthError, BarkPayload
@@ -120,3 +121,45 @@ async def test_service_send_propagates_error(
                 {"message": "hello", "target_entity": entry.entry_id},
                 blocking=True,
             )
+
+
+async def test_service_send_via_entity_id_target(
+    hass: HomeAssistant, enable_custom_integrations
+):
+    entry = await _setup_entry(hass, enable_custom_integrations)
+    await hass.async_block_till_done()
+    registry = er.async_get(hass)
+    # The button entity belongs to this entry's device.
+    button_entity_id = registry.async_get_entity_id(
+        "button", DOMAIN, f"{entry.entry_id}_test_push"
+    )
+    assert button_entity_id is not None
+    client = hass.data[DOMAIN][DATA_CLIENTS][entry.entry_id]
+    with patch.object(client, "push", new=AsyncMock()) as pushed:
+        await hass.services.async_call(
+            DOMAIN,
+            "send",
+            {"message": "via entity", "entity_id": button_entity_id},
+            blocking=True,
+        )
+    pushed.assert_awaited_once()
+
+
+async def test_service_send_via_device_id_target(
+    hass: HomeAssistant, enable_custom_integrations
+):
+    entry = await _setup_entry(hass, enable_custom_integrations)
+    await hass.async_block_till_done()
+    dreg = dr.async_get(hass)
+    devices = dr.async_entries_for_config_entry(dreg, entry.entry_id)
+    assert len(devices) == 1
+    device_id = devices[0].id
+    client = hass.data[DOMAIN][DATA_CLIENTS][entry.entry_id]
+    with patch.object(client, "push", new=AsyncMock()) as pushed:
+        await hass.services.async_call(
+            DOMAIN,
+            "send",
+            {"message": "via device", "device_id": device_id},
+            blocking=True,
+        )
+    pushed.assert_awaited_once()

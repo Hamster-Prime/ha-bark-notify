@@ -137,3 +137,27 @@ async def test_reconfigure_flow_updates_entry(
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     assert entry.data[CONF_SERVER_URL] == "https://custom.example.com"
+
+
+async def test_user_flow_duplicate_device_aborts(
+    hass: HomeAssistant, enable_custom_integrations
+):
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={**USER_INPUT},
+        unique_id="TESTKEY",
+    )
+    entry.add_to_hass(hass)
+
+    with patch(
+        "custom_components.bark.config_flow.BarkClient.push",
+        new=AsyncMock(return_value=None),
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": config_entries.SOURCE_USER}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], USER_INPUT
+        )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
