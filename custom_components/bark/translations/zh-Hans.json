@@ -1,0 +1,34 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Bark 设备",
+        "data": {
+          "name": "设备名称",
+          "server_url": "服务器地址",
+          "device_key": "设备 Key",
+          "encryption": "推送加密",
+          "encryption_key": "加密 Key（16 个字符）"
+        }
+      },
+      "reconfigure": {
+        "title": "重新配置 Bark 设备",
+        "data": {
+          "name": "设备名称",
+          "server_url": "服务器地址",
+          "device_key": "设备 Key",
+          "encryption": "推送加密",
+          "encryption_key": "加密 Key（16 个字符）"
+        }
+      }
+    },
+    "error": {
+      "invalid_encryption_key": "加密 Key 必须正好是 16 个字符",
+      "test_push_failed": "测试推送失败，请检查服务器地址、设备 Key 与加密设置"
+    },
+    "abort": {
+      "already_configured": "该 Bark 设备已配置",
+      "reconfigure_successful": "重新配置成功"
+    }
+  }
+}
