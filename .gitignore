@@ -9,3 +9,6 @@ htmlcov/
 
 # Local-only design/plan docs (kept locally, not published to the repo)
 docs/
+
+# HACS legacy icon goes inside custom_components/<domain>/brand/, NOT repo root
+/icon.png
