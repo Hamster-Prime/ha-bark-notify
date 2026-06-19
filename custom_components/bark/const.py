@@ -24,3 +24,9 @@ ATTR_TIME = "time"
 STATUS_SUCCESS = "success"
 STATUS_FAILED = "failed"
 STATUS_UNKNOWN = "unknown"
+
+DATA_CLIENTS = "clients"
+DATA_RUNTIME = "runtime"
+RUNTIME_STATUS = "status"
+RUNTIME_TIME = "time"
+PLATFORMS = ["button", "sensor"]

@@ -1,5 +1,58 @@
 """The Bark integration."""
 
-from .const import DOMAIN
+from __future__ import annotations
 
-__all__ = ["DOMAIN"]
+import logging
+
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+
+from .bark_api import BarkClient
+from .const import (
+    CONF_DEVICE_KEY,
+    CONF_ENCRYPTION,
+    CONF_ENCRYPTION_KEY,
+    CONF_SERVER_URL,
+    DATA_CLIENTS,
+    DATA_RUNTIME,
+    DOMAIN,
+    PLATFORMS,
+)
+
+_LOGGER = logging.getLogger(__name__)
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Set up a Bark config entry."""
+    client = BarkClient(
+        server_url=entry.data[CONF_SERVER_URL],
+        device_key=entry.data[CONF_DEVICE_KEY],
+        encryption=entry.data.get(CONF_ENCRYPTION, "none"),
+        encryption_key=entry.data.get(CONF_ENCRYPTION_KEY),
+        session=None,
+    )
+    domain_data = hass.data.setdefault(DOMAIN, {})
+    clients = domain_data.setdefault(DATA_CLIENTS, {})
+    clients[entry.entry_id] = client
+    domain_data.setdefault(DATA_RUNTIME, {})[entry.entry_id] = {
+        "status": "unknown",
+        "time": None,
+    }
+
+    # Platforms (button, sensor) are enabled in Tasks 11/12 once entities exist.
+    # await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    return True
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload a Bark config entry."""
+    unload_ok = True
+    # Platforms are not yet forwarded (Tasks 11/12). When they are, call:
+    #   unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    clients = hass.data.get(DOMAIN, {}).get(DATA_CLIENTS, {})
+    client: BarkClient | None = clients.pop(entry.entry_id, None)
+    if client is not None:
+        await client.async_close()
+    runtime = hass.data.get(DOMAIN, {}).get(DATA_RUNTIME, {})
+    runtime.pop(entry.entry_id, None)
+    return unload_ok
