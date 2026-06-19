@@ -3,32 +3,69 @@
     "step": {
       "user": {
         "title": "Bark Device",
+        "description": "Set up your Bark device. Copy the device info from the Bark app on your iPhone/iPad first.",
         "data": {
           "name": "Device name",
           "server_url": "Server URL",
           "device_key": "Device key",
           "encryption": "Encryption",
           "encryption_key": "Encryption key (16 chars)"
+        },
+        "data_description": {
+          "server_url": "Defaults to the official server api.day.app; can also be a self-hosted bark-server URL.",
+          "device_key": "The last segment of the URL copied from the Bark app home screen.",
+          "encryption": "Must match the Bark app's Push Encryption settings exactly (algorithm + key).",
+          "encryption_key": "Required only when encryption is enabled; must be exactly 16 ASCII characters."
         }
       },
       "reconfigure": {
         "title": "Reconfigure Bark Device",
+        "description": "Modify the settings for this Bark device.",
         "data": {
           "name": "Device name",
           "server_url": "Server URL",
           "device_key": "Device key",
           "encryption": "Encryption",
           "encryption_key": "Encryption key (16 chars)"
+        },
+        "data_description": {
+          "server_url": "Defaults to the official server api.day.app; can also be a self-hosted bark-server URL.",
+          "device_key": "The last segment of the URL copied from the Bark app home screen.",
+          "encryption": "Must match the Bark app's Push Encryption settings exactly (algorithm + key).",
+          "encryption_key": "Required only when encryption is enabled; must be exactly 16 ASCII characters."
         }
       }
     },
     "error": {
-      "invalid_encryption_key": "Encryption key must be exactly 16 characters",
+      "invalid_encryption_key": "Encryption key must be exactly 16 ASCII characters",
       "test_push_failed": "Test push failed; check the server URL, device key and encryption settings"
     },
     "abort": {
       "already_configured": "This Bark device is already configured",
       "reconfigure_successful": "Reconfiguration was successful"
+    }
+  },
+  "entity": {
+    "button": {
+      "test_push": {
+        "name": "Test push"
+      }
+    },
+    "sensor": {
+      "last_push_status": {
+        "name": "Last push status"
+      },
+      "last_push_time": {
+        "name": "Last push time"
+      }
+    }
+  },
+  "exceptions": {
+    "push_failed": {
+      "message": "Bark push failed: {error}"
+    },
+    "no_target": {
+      "message": "bark.send requires a target Bark device (target_entity / entity_id / device_id)."
     }
   }
 }

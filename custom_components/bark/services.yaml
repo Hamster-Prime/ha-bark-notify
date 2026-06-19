@@ -1,103 +1,103 @@
 send:
-  name: Send Bark push
-  description: Send a push notification via Bark with full parameter support.
+  name: 发送 Bark 推送
+  description: 通过 Bark 发送推送通知，支持 Bark 全部参数。
   target:
     entity:
       integration: bark
       domain: [button, sensor]
   fields:
     message:
-      name: Message
-      description: Push body text.
+      name: 消息内容
+      description: 推送正文。
       required: true
-      example: "Hello"
+      example: "你好"
       selector:
         text: {}
     title:
-      name: Title
+      name: 标题
       selector:
         text: {}
     subtitle:
-      name: Subtitle
+      name: 副标题
       selector:
         text: {}
     markdown:
-      name: Markdown body
-      description: Overrides "message" if set.
+      name: Markdown 正文
+      description: 设置后会忽略「消息内容」字段。
       selector:
         text:
           multiline: true
     level:
-      name: Level
+      name: 中断级别
       selector:
         select:
           options: ["critical", "active", "timeSensitive", "passive"]
     volume:
-      name: Volume
-      description: Only effective when level=critical (0-10).
+      name: 音量
+      description: 仅在「中断级别」为 critical 时生效（0-10）。
       selector:
         number:
           min: 0
           max: 10
           step: 1
     badge:
-      name: Badge
+      name: App 角标
       selector:
         number:
           min: 0
           mode: box
     call:
-      name: Repeating ringtone
+      name: 重复响铃
       selector:
         boolean: {}
     auto_copy:
-      name: Auto copy
+      name: 自动复制
       selector:
         boolean: {}
     copy:
-      name: Copy content
+      name: 复制内容
       selector:
         text: {}
     sound:
-      name: Sound
+      name: 铃声
       selector:
         text: {}
     icon:
-      name: Icon URL
+      name: 图标 URL
       selector:
         text: {}
     image:
-      name: Image URL
+      name: 图片 URL
       selector:
         text: {}
     group:
-      name: Group
+      name: 分组
       selector:
         text: {}
     is_archive:
-      name: Archive
+      name: 保存到历史
       selector:
         boolean: {}
     ttl:
-      name: TTL (seconds)
+      name: 有效期（秒）
       selector:
         number:
           min: 0
           mode: box
     url:
-      name: Click URL
+      name: 点击跳转 URL
       selector:
         text: {}
     action:
-      name: Action
+      name: 操作
       selector:
         select:
           options: ["alert"]
     id:
-      name: Notification ID
+      name: 通知 ID
       selector:
         text: {}
     delete:
-      name: Delete
+      name: 删除通知
       selector:
         boolean: {}

@@ -26,7 +26,7 @@ class BarkTestPushButton(BarkEntity, ButtonEntity):
     def __init__(self, entry: ConfigEntry) -> None:
         super().__init__(entry)
         self._attr_unique_id = f"{entry.entry_id}_test_push"
-        self._attr_name = "Test push"
+        self._attr_translation_key = "test_push"
         self._attr_icon = "mdi:bell"
 
     async def async_press(self) -> None:

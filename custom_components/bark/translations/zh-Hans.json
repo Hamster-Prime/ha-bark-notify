@@ -3,32 +3,69 @@
     "step": {
       "user": {
         "title": "Bark 设备",
+        "description": "设置你的 Bark 设备。请先在 iPhone/iPad 的 Bark App 中复制设备信息。",
         "data": {
           "name": "设备名称",
           "server_url": "服务器地址",
           "device_key": "设备 Key",
           "encryption": "推送加密",
           "encryption_key": "加密 Key（16 个字符）"
+        },
+        "data_description": {
+          "server_url": "默认使用官方服务器 api.day.app，也可填写自建 bark-server 地址。",
+          "device_key": "在 Bark App 首页复制的 URL 最后一段字符。",
+          "encryption": "需与 Bark App 内「推送加密」设置完全一致（算法 + Key）。",
+          "encryption_key": "仅当启用加密时必填，必须正好是 16 个 ASCII 字符。"
         }
       },
       "reconfigure": {
         "title": "重新配置 Bark 设备",
+        "description": "修改这台 Bark 设备的设置。",
         "data": {
           "name": "设备名称",
           "server_url": "服务器地址",
           "device_key": "设备 Key",
           "encryption": "推送加密",
           "encryption_key": "加密 Key（16 个字符）"
+        },
+        "data_description": {
+          "server_url": "默认使用官方服务器 api.day.app，也可填写自建 bark-server 地址。",
+          "device_key": "在 Bark App 首页复制的 URL 最后一段字符。",
+          "encryption": "需与 Bark App 内「推送加密」设置完全一致（算法 + Key）。",
+          "encryption_key": "仅当启用加密时必填，必须正好是 16 个 ASCII 字符。"
         }
       }
     },
     "error": {
-      "invalid_encryption_key": "加密 Key 必须正好是 16 个字符",
+      "invalid_encryption_key": "加密 Key 必须正好是 16 个 ASCII 字符",
       "test_push_failed": "测试推送失败，请检查服务器地址、设备 Key 与加密设置"
     },
     "abort": {
       "already_configured": "该 Bark 设备已配置",
       "reconfigure_successful": "重新配置成功"
+    }
+  },
+  "entity": {
+    "button": {
+      "test_push": {
+        "name": "测试推送"
+      }
+    },
+    "sensor": {
+      "last_push_status": {
+        "name": "最近推送状态"
+      },
+      "last_push_time": {
+        "name": "最近推送时间"
+      }
+    }
+  },
+  "exceptions": {
+    "push_failed": {
+      "message": "Bark 推送失败：{error}"
+    },
+    "no_target": {
+      "message": "调用 bark.send 需要指定目标 Bark 设备（target_entity / entity_id / device_id）。"
     }
   }
 }

@@ -61,7 +61,7 @@ class BarkLastPushStatusSensor(_BarkSensorBase):
 
     def __init__(self, entry: ConfigEntry) -> None:
         super().__init__(entry, "last_push_status")
-        self._attr_name = "Last push status"
+        self._attr_translation_key = "last_push_status"
 
     @property
     def native_value(self) -> str | None:
@@ -75,7 +75,7 @@ class BarkLastPushTimeSensor(_BarkSensorBase):
 
     def __init__(self, entry: ConfigEntry) -> None:
         super().__init__(entry, "last_push_time")
-        self._attr_name = "Last push time"
+        self._attr_translation_key = "last_push_time"
         self._attr_icon = "mdi:clock-outline"
 
     @property
