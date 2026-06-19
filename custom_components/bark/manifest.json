@@ -1,0 +1,11 @@
+{
+  "domain": "bark",
+  "name": "Bark",
+  "documentation": "https://github.com/your-github-username/ha-bark-notify",
+  "issue_tracker": "https://github.com/your-github-username/ha-bark-notify/issues",
+  "codeowners": ["@your-github-username"],
+  "config_flow": true,
+  "iot_class": "cloud_push",
+  "requirements": [],
+  "version": "1.0.0"
+}
