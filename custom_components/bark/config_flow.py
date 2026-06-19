@@ -103,3 +103,39 @@ class BarkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="user", data_schema=_user_schema(user_input), errors=errors
         )
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Reconfigure an existing entry."""
+        return await self.async_step_reconfigure_confirm(user_input)
+
+    async def async_step_reconfigure_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        errors: dict[str, str] = {}
+        entry = self._get_reconfigure_entry()
+        if user_input is not None:
+            err = _validate_encryption_key(user_input)
+            if err is None:
+                try:
+                    await _send_test_push(self.hass, user_input)
+                except BarkEncryptionError:
+                    err = "invalid_encryption_key"
+                except BarkError:
+                    err = "test_push_failed"
+            if err is None:
+                self.hass.config_entries.async_update_entry(
+                    entry, data=user_input, title=user_input[CONF_NAME]
+                )
+                await self.hass.config_entries.async_reload(entry.entry_id)
+                return self.async_abort(reason="reconfigure_successful")
+            errors["base"] = err
+
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=_user_schema(dict(entry.data)),
+            errors=errors,
+            description_placeholders={"name": entry.data.get(CONF_NAME, "")},
+            last_step=True,
+        )

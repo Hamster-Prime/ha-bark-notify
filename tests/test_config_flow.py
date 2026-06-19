@@ -6,6 +6,7 @@ import pytest
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.bark.const import (
     CONF_DEVICE_KEY,
@@ -109,3 +110,30 @@ async def test_user_flow_encryption_error_during_push(
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "user"
     assert result["errors"]["base"] == "invalid_encryption_key"
+
+
+async def test_reconfigure_flow_updates_entry(
+    hass: HomeAssistant, enable_custom_integrations
+):
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={**USER_INPUT},
+        unique_id="TESTKEY",
+    )
+    entry.add_to_hass(hass)
+
+    with patch(
+        "custom_components.bark.config_flow.BarkClient.push",
+        new=AsyncMock(return_value=None),
+    ):
+        result = await entry.start_reconfigure_flow(hass)
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "reconfigure"
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {**USER_INPUT, CONF_SERVER_URL: "https://custom.example.com"},
+        )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.data[CONF_SERVER_URL] == "https://custom.example.com"

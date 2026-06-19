@@ -10,6 +10,16 @@
           "encryption": "Encryption",
           "encryption_key": "Encryption key (16 chars)"
         }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Bark Device",
+        "data": {
+          "name": "Device name",
+          "server_url": "Server URL",
+          "device_key": "Device key",
+          "encryption": "Encryption",
+          "encryption_key": "Encryption key (16 chars)"
+        }
       }
     },
     "error": {
@@ -17,7 +27,8 @@
       "test_push_failed": "Test push failed; check the server URL, device key and encryption settings"
     },
     "abort": {
-      "already_configured": "This Bark device is already configured"
+      "already_configured": "This Bark device is already configured",
+      "reconfigure_successful": "Reconfiguration was successful"
     }
   }
 }
