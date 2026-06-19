@@ -1,7 +1,12 @@
 """Tests for BarkClient."""
 
+import base64
+import json
+
 import aiohttp
 import pytest
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.padding import PKCS7
 
 from custom_components.bark.bark_api import (
     BarkAuthError,
@@ -100,3 +105,56 @@ async def test_push_timeout_raises_connection_error(client_to, bark_server_recei
         client = client_to(session=session, timeout=1)
         with pytest.raises(BarkConnectionError):
             await client.push(BarkPayload(body="x"))
+
+
+ENC_KEY = "1234567890123456"
+
+
+async def test_encrypted_push_sends_ciphertext_only(client_to, bark_server_received):
+    async with aiohttp.ClientSession() as session:
+        client = client_to(
+            session=session, encryption="aes-128-cbc", encryption_key=ENC_KEY
+        )
+        await client.push(BarkPayload(body="secret", title="t"))
+    sent = bark_server_received["json"]
+    assert set(sent.keys()) == {"ciphertext", "iv"}
+    # no plaintext fields leak
+    assert "body" not in sent and "title" not in sent
+
+
+async def test_encrypted_push_roundtrip_decrypts(client_to, bark_server_received):
+    async with aiohttp.ClientSession() as session:
+        client = client_to(
+            session=session, encryption="aes-128-cbc", encryption_key=ENC_KEY
+        )
+        await client.push(BarkPayload(body="secret", title="t"))
+    sent = bark_server_received["json"]
+    iv_bytes = base64.b64decode(sent["iv"])
+    cipher = Cipher(algorithms.AES(ENC_KEY.encode("utf-8")), modes.CBC(iv_bytes))
+    decryptor = cipher.decryptor()
+    padded = decryptor.update(base64.b64decode(sent["ciphertext"])) + decryptor.finalize()
+    unpadder = PKCS7(128).unpadder()
+    plaintext = unpadder.update(padded) + unpadder.finalize()
+    decoded = json.loads(plaintext.decode("utf-8"))
+    assert decoded == {"body": "secret", "title": "t"}
+
+
+async def test_encrypted_push_uses_random_iv(client_to, bark_server_received):
+    async with aiohttp.ClientSession() as session:
+        client = client_to(
+            session=session, encryption="aes-128-cbc", encryption_key=ENC_KEY
+        )
+        await client.push(BarkPayload(body="a"))
+        first_iv = bark_server_received["json"]["iv"]
+        await client.push(BarkPayload(body="a"))
+        second_iv = bark_server_received["json"]["iv"]
+    assert first_iv != second_iv
+
+
+async def test_no_encryption_when_disabled(client_to, bark_server_received):
+    async with aiohttp.ClientSession() as session:
+        client = client_to(session=session)  # encryption defaults to "none"
+        await client.push(BarkPayload(body="plain"))
+    sent = bark_server_received["json"]
+    assert "ciphertext" not in sent and "iv" not in sent
+    assert sent == {"body": "plain"}
