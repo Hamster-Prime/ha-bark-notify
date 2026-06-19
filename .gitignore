@@ -6,3 +6,6 @@ __pycache__/
 .coverage
 htmlcov/
 .DS_Store
+
+# Local-only design/plan docs (kept locally, not published to the repo)
+docs/
