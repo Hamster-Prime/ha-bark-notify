@@ -2,7 +2,6 @@
 
 from unittest.mock import AsyncMock, patch
 
-import pytest
 from homeassistant.components.button import DOMAIN as BUTTON_DOMAIN
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
@@ -62,3 +61,6 @@ async def test_test_push_button_created_and_presses(
         )
         await hass.async_block_till_done()
     pushed.assert_awaited_once()
+    sent_payload = pushed.await_args.args[0]
+    assert sent_payload.title == "iPhone"
+    assert sent_payload.body == "Home Assistant 测试推送"

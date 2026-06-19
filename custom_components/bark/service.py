@@ -125,7 +125,7 @@ def _resolve_entry_ids(hass: HomeAssistant, data: dict[str, Any]) -> list[str]:
     return unique
 
 
-async def _do_push(hass: HomeAssistant, entry_id: str, payload: BarkPayload) -> None:
+async def do_push(hass: HomeAssistant, entry_id: str, payload: BarkPayload) -> None:
     """Execute a push for one entry and update runtime state."""
     client = hass.data[DOMAIN][DATA_CLIENTS][entry_id]
     runtime = hass.data[DOMAIN][DATA_RUNTIME][entry_id]
@@ -162,7 +162,7 @@ async def async_setup_services(hass: HomeAssistant) -> None:
             )
         payload = build_payload(data)
         for entry_id in entry_ids:
-            await _do_push(hass, entry_id, payload)
+            await do_push(hass, entry_id, payload)
 
     hass.services.async_register(
         DOMAIN, "send", handle_send, schema=SERVICE_SCHEMA, supports_response=False
