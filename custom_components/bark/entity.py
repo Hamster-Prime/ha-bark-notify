@@ -35,3 +35,12 @@ class BarkEntity(Entity):
     def __init__(self, entry: ConfigEntry) -> None:
         self._entry = entry
         self._attr_device_info = build_device_info(entry)
+
+
+def redact_key(key: str | None) -> str:
+    """Redact a device key for logging: show first 4 + last 4 chars."""
+    if not key:
+        return "<none>"
+    if len(key) <= 8:
+        return "<redacted>"
+    return f"{key[:4]}***{key[-4:]}"

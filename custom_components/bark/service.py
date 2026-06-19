@@ -25,6 +25,7 @@ from .const import (
     STATUS_FAILED,
     STATUS_SUCCESS,
 )
+from .entity import redact_key
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -138,6 +139,12 @@ async def do_push(hass: HomeAssistant, entry_id: str, payload: BarkPayload) -> N
         hass.bus.async_fire(
             EVENT_PUSH_UPDATE,
             {DOMAIN: {entry_id: {RUNTIME_STATUS: STATUS_FAILED, RUNTIME_TIME: now}}},
+        )
+        _LOGGER.debug(
+            "bark push failed for entry %s (key=%s): %s",
+            entry_id,
+            redact_key(hass.data[DOMAIN][DATA_CLIENTS][entry_id]._device_key),
+            err,
         )
         raise HomeAssistantError(f"Bark 推送失败: {err}") from err
     runtime[RUNTIME_STATUS] = STATUS_SUCCESS

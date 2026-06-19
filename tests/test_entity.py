@@ -136,3 +136,20 @@ async def test_sensor_status_updates_to_failed_on_error(
             )
         await hass.async_block_till_done()
     assert hass.states.get(status_id).state == "failed"
+
+
+async def test_device_registry_uses_hashed_identifier(
+    hass: HomeAssistant, enable_custom_integrations
+):
+    entry = await _setup(hass, enable_custom_integrations)
+    await hass.async_block_till_done()
+    from homeassistant.helpers import device_registry as dr
+
+    dreg = dr.async_get(hass)
+    devices = dr.async_entries_for_config_entry(dreg, entry.entry_id)
+    assert len(devices) == 1
+    ident = list(devices[0].identifiers)[0]
+    assert ident[0] == DOMAIN
+    # identifier must NOT be the raw device key
+    assert ident[1] != "TESTKEY"
+    assert len(ident[1]) == 16
