@@ -17,7 +17,6 @@ from .bark_api import (
     BarkEncryptionError,
     BarkError,
     BarkPayload,
-    EncryptionAlgorithm,
 )
 from .const import (
     CONF_DEVICE_KEY,

@@ -22,6 +22,7 @@ from .const import (
     EVENT_PUSH_UPDATE,
     RUNTIME_STATUS,
     RUNTIME_TIME,
+    SERVICE_SEND,
     STATUS_FAILED,
     STATUS_SUCCESS,
 )
@@ -143,7 +144,7 @@ async def do_push(hass: HomeAssistant, entry_id: str, payload: BarkPayload) -> N
         _LOGGER.debug(
             "bark push failed for entry %s (key=%s): %s",
             entry_id,
-            redact_key(hass.data[DOMAIN][DATA_CLIENTS][entry_id]._device_key),
+            redact_key(client._device_key),
             err,
         )
         raise HomeAssistantError(f"Bark 推送失败: {err}") from err
@@ -157,7 +158,7 @@ async def do_push(hass: HomeAssistant, entry_id: str, payload: BarkPayload) -> N
 
 async def async_setup_services(hass: HomeAssistant) -> None:
     """Register bark.send (idempotent)."""
-    if hass.services.has_service(DOMAIN, "send"):
+    if hass.services.has_service(DOMAIN, SERVICE_SEND):
         return
 
     async def handle_send(call: ServiceCall) -> None:
@@ -172,5 +173,5 @@ async def async_setup_services(hass: HomeAssistant) -> None:
             await do_push(hass, entry_id, payload)
 
     hass.services.async_register(
-        DOMAIN, "send", handle_send, schema=SERVICE_SCHEMA, supports_response=False
+        DOMAIN, SERVICE_SEND, handle_send, schema=SERVICE_SCHEMA, supports_response=False
     )
