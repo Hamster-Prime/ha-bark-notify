@@ -2,12 +2,16 @@
 
 from unittest.mock import AsyncMock, patch
 
+import pytest
 from homeassistant.components.button import DOMAIN as BUTTON_DOMAIN
 from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
+from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.bark.bark_api import BarkAuthError
 from custom_components.bark.const import (
     CONF_DEVICE_KEY,
     CONF_NAME,
@@ -93,6 +97,9 @@ async def test_sensor_status_updates_to_success_after_send(
     status_id = registry.async_get_entity_id(
         SENSOR_DOMAIN, DOMAIN, f"{entry.entry_id}_last_push_status"
     )
+    time_id = registry.async_get_entity_id(
+        SENSOR_DOMAIN, DOMAIN, f"{entry.entry_id}_last_push_time"
+    )
     client = hass.data[DOMAIN][DATA_CLIENTS][entry.entry_id]
     with patch.object(client, "push", new=AsyncMock()):
         await hass.services.async_call(
@@ -103,6 +110,10 @@ async def test_sensor_status_updates_to_success_after_send(
         )
         await hass.async_block_till_done()
     assert hass.states.get(status_id).state == "success"
+    time_state = hass.states.get(time_id).state
+    assert time_state is not None
+    parsed = dt_util.parse_datetime(time_state)
+    assert parsed is not None
 
 
 async def test_sensor_status_updates_to_failed_on_error(
@@ -114,20 +125,14 @@ async def test_sensor_status_updates_to_failed_on_error(
     status_id = registry.async_get_entity_id(
         SENSOR_DOMAIN, DOMAIN, f"{entry.entry_id}_last_push_status"
     )
-    from custom_components.bark.bark_api import BarkAuthError
-
     client = hass.data[DOMAIN][DATA_CLIENTS][entry.entry_id]
     with patch.object(client, "push", new=AsyncMock(side_effect=BarkAuthError("bad"))):
-        from homeassistant.exceptions import HomeAssistantError
-
-        try:
+        with pytest.raises(HomeAssistantError):
             await hass.services.async_call(
                 DOMAIN,
                 "send",
                 {"message": "x", "target_entity": entry.entry_id},
                 blocking=True,
             )
-        except HomeAssistantError:
-            pass
         await hass.async_block_till_done()
     assert hass.states.get(status_id).state == "failed"

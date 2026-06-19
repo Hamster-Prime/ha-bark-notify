@@ -7,11 +7,12 @@ from datetime import datetime
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
-    SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util import dt as dt_util
 
 from .const import DATA_RUNTIME, DOMAIN, EVENT_PUSH_UPDATE, RUNTIME_STATUS, RUNTIME_TIME
 from .entity import BarkEntity
@@ -22,26 +23,27 @@ async def async_setup_entry(
 ) -> None:
     """Set up the Bark sensor platform."""
     async_add_entities(
-        [BarkLastPushStatusSensor(hass, entry), BarkLastPushTimeSensor(hass, entry)]
+        [BarkLastPushStatusSensor(entry), BarkLastPushTimeSensor(entry)]
     )
 
 
 class _BarkSensorBase(BarkEntity, SensorEntity):
     """Base for Bark diagnostic sensors."""
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry, suffix: str) -> None:
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, entry: ConfigEntry, suffix: str) -> None:
         super().__init__(entry)
-        self._hass = hass
         self._attr_unique_id = f"{entry.entry_id}_{suffix}"
 
     @property
     def _runtime(self) -> dict:
-        return self._hass.data[DOMAIN][DATA_RUNTIME][self._entry.entry_id]
+        return self.hass.data[DOMAIN][DATA_RUNTIME][self._entry.entry_id]
 
     async def async_added_to_hass(self) -> None:
         """Subscribe to push-update events."""
         self.async_on_remove(
-            self._hass.bus.async_listen(EVENT_PUSH_UPDATE, self._on_push_update)
+            self.hass.bus.async_listen(EVENT_PUSH_UPDATE, self._on_push_update)
         )
 
     @callback
@@ -57,8 +59,8 @@ class BarkLastPushStatusSensor(_BarkSensorBase):
 
     _attr_icon = "mdi:check-circle-outline"
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
-        super().__init__(hass, entry, "last_push_status")
+    def __init__(self, entry: ConfigEntry) -> None:
+        super().__init__(entry, "last_push_status")
         self._attr_name = "Last push status"
 
     @property
@@ -70,10 +72,9 @@ class BarkLastPushTimeSensor(_BarkSensorBase):
     """Sensor showing the timestamp of the last push."""
 
     _attr_device_class = SensorDeviceClass.TIMESTAMP
-    _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
-        super().__init__(hass, entry, "last_push_time")
+    def __init__(self, entry: ConfigEntry) -> None:
+        super().__init__(entry, "last_push_time")
         self._attr_name = "Last push time"
         self._attr_icon = "mdi:clock-outline"
 
@@ -82,6 +83,4 @@ class BarkLastPushTimeSensor(_BarkSensorBase):
         value = self._runtime.get(RUNTIME_TIME)
         if value is None:
             return None
-        from homeassistant.util import dt as dt_util
-
         return dt_util.parse_datetime(value)
