@@ -136,9 +136,9 @@ def encrypt_payload(
     Returns:
         Tuple of (ciphertext_b64, iv_b64).
     """
-    if len(key) != 16:
-        raise BarkEncryptionError("encryption key must be exactly 16 characters")
     key_bytes = key.encode("utf-8")
+    if len(key_bytes) != 16:
+        raise BarkEncryptionError("encryption key must encode to exactly 16 bytes (AES-128)")
     if iv is None:
         iv = os.urandom(16)
     cipher = Cipher(algorithms.AES(key_bytes), modes.CBC(iv))

@@ -2,6 +2,7 @@
 
 import base64
 
+import pytest
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.padding import PKCS7
 
@@ -42,9 +43,7 @@ def test_roundtrip_decrypt():
     assert plaintext.decode("utf-8") == DOC_PLAINTEXT
 
 
-def test_invalid_key_length_raises():
-    try:
-        encrypt_payload(DOC_PLAINTEXT, "too-short")
-    except BarkEncryptionError:
-        return
-    raise AssertionError("expected BarkEncryptionError for short key")
+@pytest.mark.parametrize("bad_key", ["too-short", "12345678901234567"])
+def test_invalid_key_length_raises(bad_key):
+    with pytest.raises(BarkEncryptionError):
+        encrypt_payload(DOC_PLAINTEXT, bad_key)
