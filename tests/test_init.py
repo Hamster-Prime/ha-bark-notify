@@ -2,19 +2,22 @@
 
 from unittest.mock import AsyncMock, patch
 
-import pytest
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.bark import async_setup_entry, async_unload_entry
+from custom_components.bark import async_unload_entry
 from custom_components.bark.bark_api import BarkClient
 from custom_components.bark.const import (
     CONF_DEVICE_KEY,
     CONF_NAME,
     CONF_SERVER_URL,
     DATA_CLIENTS,
+    DATA_RUNTIME,
     DOMAIN,
+    RUNTIME_STATUS,
+    RUNTIME_TIME,
+    STATUS_UNKNOWN,
 )
 
 
@@ -47,6 +50,9 @@ async def test_setup_entry_creates_client_and_runtime(
     assert isinstance(
         hass.data[DOMAIN][DATA_CLIENTS][entry.entry_id], BarkClient
     )
+    runtime = hass.data[DOMAIN][DATA_RUNTIME][entry.entry_id]
+    assert runtime[RUNTIME_STATUS] == STATUS_UNKNOWN
+    assert runtime[RUNTIME_TIME] is None
 
 
 async def test_unload_entry_closes_client(
@@ -67,3 +73,4 @@ async def test_unload_entry_closes_client(
     assert ok
     closed.assert_awaited_once()
     assert entry.entry_id not in hass.data[DOMAIN][DATA_CLIENTS]
+    assert entry.entry_id not in hass.data[DOMAIN][DATA_RUNTIME]

@@ -6,6 +6,7 @@ import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .bark_api import BarkClient
 from .const import (
@@ -17,6 +18,9 @@ from .const import (
     DATA_RUNTIME,
     DOMAIN,
     PLATFORMS,
+    RUNTIME_STATUS,
+    RUNTIME_TIME,
+    STATUS_UNKNOWN,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -29,14 +33,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         device_key=entry.data[CONF_DEVICE_KEY],
         encryption=entry.data.get(CONF_ENCRYPTION, "none"),
         encryption_key=entry.data.get(CONF_ENCRYPTION_KEY),
-        session=None,
+        session=async_get_clientsession(hass),
     )
     domain_data = hass.data.setdefault(DOMAIN, {})
     clients = domain_data.setdefault(DATA_CLIENTS, {})
     clients[entry.entry_id] = client
     domain_data.setdefault(DATA_RUNTIME, {})[entry.entry_id] = {
-        "status": "unknown",
-        "time": None,
+        RUNTIME_STATUS: STATUS_UNKNOWN,
+        RUNTIME_TIME: None,
     }
 
     # Platforms (button, sensor) are enabled in Tasks 11/12 once entities exist.
