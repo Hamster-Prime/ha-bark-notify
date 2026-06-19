@@ -2,8 +2,14 @@
 
 from __future__ import annotations
 
+import base64
+import os
 from dataclasses import dataclass
+from enum import Enum
 from typing import Any
+
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.padding import PKCS7
 
 
 @dataclass
@@ -75,3 +81,72 @@ class BarkPayload:
         if self.delete:
             data["delete"] = "1"
         return data
+
+
+class BarkError(Exception):
+    """Base class for Bark errors."""
+
+
+class BarkConnectionError(BarkError):
+    """Network / DNS / timeout / unreachable server."""
+
+
+class BarkAuthError(BarkError):
+    """HTTP 400/401 — typically a bad device key."""
+
+
+class BarkRateLimitError(BarkError):
+    """HTTP 429 — rate limited / banned by server."""
+
+
+class BarkServerError(BarkError):
+    """HTTP 5xx — server-side error."""
+
+
+class BarkPushError(BarkError):
+    """Other non-200 responses. Carries the server code and message."""
+
+    def __init__(self, code: int, message: str) -> None:
+        self.code = code
+        self.message = message
+        super().__init__(f"Bark push failed ({code}): {message}")
+
+
+class BarkEncryptionError(BarkError):
+    """Invalid encryption parameters."""
+
+
+class EncryptionAlgorithm(str, Enum):
+    NONE = "none"
+    AES_128_CBC = "aes-128-cbc"
+
+
+def encrypt_payload(
+    payload_json: str,
+    key: str,
+    iv: bytes | None = None,
+) -> tuple[str, str]:
+    """Encrypt payload_json with AES-128-CBC.
+
+    Args:
+        payload_json: plaintext JSON string to encrypt.
+        key: 16-character ASCII key (AES-128).
+        iv: optional fixed IV (for testing interop). Random if omitted.
+
+    Returns:
+        Tuple of (ciphertext_b64, iv_b64).
+    """
+    if len(key) != 16:
+        raise BarkEncryptionError("encryption key must be exactly 16 characters")
+    key_bytes = key.encode("utf-8")
+    if iv is None:
+        iv = os.urandom(16)
+    cipher = Cipher(algorithms.AES(key_bytes), modes.CBC(iv))
+    encryptor = cipher.encryptor()
+    padder = PKCS7(algorithms.AES.block_size).padder()
+    padded = padder.update(payload_json.encode("utf-8")) + padder.finalize()
+    ciphertext = encryptor.update(padded) + encryptor.finalize()
+    return (
+        base64.b64encode(ciphertext).decode(),
+        base64.b64encode(iv).decode(),
+    )
