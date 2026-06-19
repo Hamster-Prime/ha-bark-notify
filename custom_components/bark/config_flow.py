@@ -5,8 +5,10 @@ from __future__ import annotations
 from typing import Any
 
 import voluptuous as vol
+from voluptuous import UNDEFINED
 from homeassistant import config_entries
 from homeassistant.const import CONF_NAME
+from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -34,16 +36,21 @@ _ENCRYPTION_OPTIONS = {
 }
 
 
-def _user_schema() -> vol.Schema:
+def _user_schema(user_input: dict[str, Any] | None = None) -> vol.Schema:
+    user_input = user_input or {}
     return vol.Schema(
         {
-            vol.Required(CONF_NAME): str,
-            vol.Required(CONF_SERVER_URL, default=DEFAULT_SERVER_URL): str,
-            vol.Required(CONF_DEVICE_KEY): str,
-            vol.Required(CONF_ENCRYPTION, default=ENCRYPTION_NONE): vol.In(
-                _ENCRYPTION_OPTIONS
-            ),
-            vol.Optional(CONF_ENCRYPTION_KEY): str,
+            vol.Required(CONF_NAME, default=user_input.get(CONF_NAME)): str,
+            vol.Required(
+                CONF_SERVER_URL, default=user_input.get(CONF_SERVER_URL, DEFAULT_SERVER_URL)
+            ): str,
+            vol.Required(CONF_DEVICE_KEY, default=user_input.get(CONF_DEVICE_KEY)): str,
+            vol.Required(
+                CONF_ENCRYPTION, default=user_input.get(CONF_ENCRYPTION, ENCRYPTION_NONE)
+            ): vol.In(_ENCRYPTION_OPTIONS),
+            vol.Optional(
+                CONF_ENCRYPTION_KEY, default=user_input.get(CONF_ENCRYPTION_KEY, UNDEFINED)
+            ): str,
         }
     )
 
@@ -56,7 +63,7 @@ def _validate_encryption_key(user_input: dict[str, Any]) -> str | None:
     return None
 
 
-async def _send_test_push(hass, user_input: dict[str, Any]) -> None:
+async def _send_test_push(hass: HomeAssistant, user_input: dict[str, Any]) -> None:
     client = BarkClient(
         server_url=user_input[CONF_SERVER_URL],
         device_key=user_input[CONF_DEVICE_KEY],
@@ -94,5 +101,5 @@ class BarkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
             errors["base"] = err
         return self.async_show_form(
-            step_id="user", data_schema=_user_schema(), errors=errors
+            step_id="user", data_schema=_user_schema(user_input), errors=errors
         )
