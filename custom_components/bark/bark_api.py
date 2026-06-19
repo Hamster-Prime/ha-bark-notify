@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import json
 import os
@@ -210,15 +211,23 @@ class BarkClient:
                 timeout=aiohttp.ClientTimeout(total=self._timeout),
             ) as resp:
                 text = await resp.text()
-        except aiohttp.ClientError as err:
+        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
             raise BarkConnectionError(f"failed to reach bark server: {err}") from err
         try:
             data = json.loads(text)
         except json.JSONDecodeError:
             data = {}
-        code = int(data.get("code", resp.status))
+        raw_code = data.get("code", resp.status)
+        code = int(raw_code) if raw_code is not None else resp.status
         message = data.get("message", "")
-        timestamp = data.get("timestamp")
+        raw_timestamp = data.get("timestamp")
+        timestamp = int(raw_timestamp) if raw_timestamp is not None else None
         if resp.status == 200 and code == 200:
             return BarkResponse(code=code, message=message, timestamp=timestamp)
-        raise BarkPushError(code, message or text)
+        if resp.status in (400, 401):
+            raise BarkAuthError(f"bark rejected the request ({resp.status}): {message}")
+        if resp.status == 429:
+            raise BarkRateLimitError("bark rate-limited the request; retry later")
+        if 500 <= resp.status < 600:
+            raise BarkServerError(f"bark server error ({resp.status}): {message}")
+        raise BarkPushError(resp.status, message or text)

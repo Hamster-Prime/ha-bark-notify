@@ -4,9 +4,14 @@ import aiohttp
 import pytest
 
 from custom_components.bark.bark_api import (
+    BarkAuthError,
     BarkClient,
+    BarkConnectionError,
     BarkPayload,
+    BarkPushError,
+    BarkRateLimitError,
     BarkResponse,
+    BarkServerError,
 )
 
 
@@ -41,3 +46,57 @@ async def test_push_posts_json_to_device_key_path(client_to, bark_server_receive
     assert bark_server_received["path"] == "/TESTKEY"
     assert bark_server_received["headers"]["Content-Type"] == "application/json"
     assert bark_server_received["json"] == {"body": "hello", "title": "t"}
+
+
+async def test_push_400_raises_auth_error(client_to, bark_server_received):
+    bark_server_received["status"] = 400
+    bark_server_received["body"] = {"code": 400, "message": "bad key"}
+    async with aiohttp.ClientSession() as session:
+        client = client_to(session=session)
+        with pytest.raises(BarkAuthError):
+            await client.push(BarkPayload(body="x"))
+
+
+async def test_push_401_raises_auth_error(client_to, bark_server_received):
+    bark_server_received["status"] = 401
+    bark_server_received["body"] = {"code": 401, "message": "unauthorized"}
+    async with aiohttp.ClientSession() as session:
+        client = client_to(session=session)
+        with pytest.raises(BarkAuthError):
+            await client.push(BarkPayload(body="x"))
+
+
+async def test_push_429_raises_rate_limit_error(client_to, bark_server_received):
+    bark_server_received["status"] = 429
+    bark_server_received["body"] = {"code": 429, "message": "rate limited"}
+    async with aiohttp.ClientSession() as session:
+        client = client_to(session=session)
+        with pytest.raises(BarkRateLimitError):
+            await client.push(BarkPayload(body="x"))
+
+
+async def test_push_500_raises_server_error(client_to, bark_server_received):
+    bark_server_received["status"] = 500
+    bark_server_received["body"] = {"code": 500, "message": "boom"}
+    async with aiohttp.ClientSession() as session:
+        client = client_to(session=session)
+        with pytest.raises(BarkServerError):
+            await client.push(BarkPayload(body="x"))
+
+
+async def test_push_other_non_200_raises_push_error(client_to, bark_server_received):
+    bark_server_received["status"] = 404
+    bark_server_received["body"] = {"code": 404, "message": "not found"}
+    async with aiohttp.ClientSession() as session:
+        client = client_to(session=session)
+        with pytest.raises(BarkPushError) as exc_info:
+            await client.push(BarkPayload(body="x"))
+        assert exc_info.value.code == 404
+
+
+async def test_push_timeout_raises_connection_error(client_to, bark_server_received):
+    bark_server_received["delay"] = 5
+    async with aiohttp.ClientSession() as session:
+        client = client_to(session=session, timeout=1)
+        with pytest.raises(BarkConnectionError):
+            await client.push(BarkPayload(body="x"))

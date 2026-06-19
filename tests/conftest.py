@@ -1,5 +1,6 @@
 """Shared test fixtures."""
 
+import asyncio
 from typing import Any
 
 import pytest
@@ -32,6 +33,9 @@ async def bark_server(aiohttp_server, bark_server_received, socket_enabled):
         except Exception:
             bark_server_received["json"] = None
         bark_server_received["requests"].append(request.path)
+        delay = bark_server_received.get("delay", 0)
+        if delay:
+            await asyncio.sleep(delay)
         status: int = bark_server_received.get("status", 200)
         body: Any = bark_server_received.get(
             "body", {"code": 200, "message": "success", "timestamp": 1700000000}
