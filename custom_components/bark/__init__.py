@@ -44,17 +44,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         RUNTIME_TIME: None,
     }
 
-    await hass.config_entries.async_forward_entry_setups(
-        entry, [p for p in PLATFORMS if p == "button"]
-    )
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     await async_setup_services(hass)
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a Bark config entry."""
-    # button platform is forwarded in async_setup_entry; sensor joins in Task 12.
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, ["button"])
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     clients = hass.data.get(DOMAIN, {}).get(DATA_CLIENTS, {})
     client: BarkClient | None = clients.pop(entry.entry_id, None)
     if client is not None:

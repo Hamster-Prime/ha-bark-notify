@@ -3,6 +3,7 @@
 from unittest.mock import AsyncMock, patch
 
 from homeassistant.components.button import DOMAIN as BUTTON_DOMAIN
+from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -64,3 +65,69 @@ async def test_test_push_button_created_and_presses(
     sent_payload = pushed.await_args.args[0]
     assert sent_payload.title == "iPhone"
     assert sent_payload.body == "Home Assistant 测试推送"
+
+
+async def test_sensors_created_with_unknown_initial_state(
+    hass: HomeAssistant, enable_custom_integrations
+):
+    entry = await _setup(hass, enable_custom_integrations)
+    await hass.async_block_till_done()
+    registry = er.async_get(hass)
+    status_id = registry.async_get_entity_id(
+        SENSOR_DOMAIN, DOMAIN, f"{entry.entry_id}_last_push_status"
+    )
+    time_id = registry.async_get_entity_id(
+        SENSOR_DOMAIN, DOMAIN, f"{entry.entry_id}_last_push_time"
+    )
+    assert status_id is not None
+    assert time_id is not None
+    assert hass.states.get(status_id).state == "unknown"
+
+
+async def test_sensor_status_updates_to_success_after_send(
+    hass: HomeAssistant, enable_custom_integrations
+):
+    entry = await _setup(hass, enable_custom_integrations)
+    await hass.async_block_till_done()
+    registry = er.async_get(hass)
+    status_id = registry.async_get_entity_id(
+        SENSOR_DOMAIN, DOMAIN, f"{entry.entry_id}_last_push_status"
+    )
+    client = hass.data[DOMAIN][DATA_CLIENTS][entry.entry_id]
+    with patch.object(client, "push", new=AsyncMock()):
+        await hass.services.async_call(
+            DOMAIN,
+            "send",
+            {"message": "x", "target_entity": entry.entry_id},
+            blocking=True,
+        )
+        await hass.async_block_till_done()
+    assert hass.states.get(status_id).state == "success"
+
+
+async def test_sensor_status_updates_to_failed_on_error(
+    hass: HomeAssistant, enable_custom_integrations
+):
+    entry = await _setup(hass, enable_custom_integrations)
+    await hass.async_block_till_done()
+    registry = er.async_get(hass)
+    status_id = registry.async_get_entity_id(
+        SENSOR_DOMAIN, DOMAIN, f"{entry.entry_id}_last_push_status"
+    )
+    from custom_components.bark.bark_api import BarkAuthError
+
+    client = hass.data[DOMAIN][DATA_CLIENTS][entry.entry_id]
+    with patch.object(client, "push", new=AsyncMock(side_effect=BarkAuthError("bad"))):
+        from homeassistant.exceptions import HomeAssistantError
+
+        try:
+            await hass.services.async_call(
+                DOMAIN,
+                "send",
+                {"message": "x", "target_entity": entry.entry_id},
+                blocking=True,
+            )
+        except HomeAssistantError:
+            pass
+        await hass.async_block_till_done()
+    assert hass.states.get(status_id).state == "failed"
