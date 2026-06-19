@@ -1,0 +1,98 @@
+"""Config flow for the Bark integration."""
+
+from __future__ import annotations
+
+from typing import Any
+
+import voluptuous as vol
+from homeassistant import config_entries
+from homeassistant.const import CONF_NAME
+from homeassistant.data_entry_flow import FlowResult
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+from .bark_api import (
+    BarkClient,
+    BarkEncryptionError,
+    BarkError,
+    BarkPayload,
+    EncryptionAlgorithm,
+)
+from .const import (
+    CONF_DEVICE_KEY,
+    CONF_ENCRYPTION,
+    CONF_ENCRYPTION_KEY,
+    CONF_SERVER_URL,
+    DEFAULT_SERVER_URL,
+    DOMAIN,
+    ENCRYPTION_AES_128_CBC,
+    ENCRYPTION_NONE,
+)
+
+_ENCRYPTION_OPTIONS = {
+    ENCRYPTION_NONE: "Off",
+    ENCRYPTION_AES_128_CBC: "AES-128-CBC",
+}
+
+
+def _user_schema() -> vol.Schema:
+    return vol.Schema(
+        {
+            vol.Required(CONF_NAME): str,
+            vol.Required(CONF_SERVER_URL, default=DEFAULT_SERVER_URL): str,
+            vol.Required(CONF_DEVICE_KEY): str,
+            vol.Required(CONF_ENCRYPTION, default=ENCRYPTION_NONE): vol.In(
+                _ENCRYPTION_OPTIONS
+            ),
+            vol.Optional(CONF_ENCRYPTION_KEY): str,
+        }
+    )
+
+
+def _validate_encryption_key(user_input: dict[str, Any]) -> str | None:
+    if user_input[CONF_ENCRYPTION] == ENCRYPTION_AES_128_CBC:
+        key = user_input.get(CONF_ENCRYPTION_KEY) or ""
+        if len(key) != 16:
+            return "invalid_encryption_key"
+    return None
+
+
+async def _send_test_push(hass, user_input: dict[str, Any]) -> None:
+    client = BarkClient(
+        server_url=user_input[CONF_SERVER_URL],
+        device_key=user_input[CONF_DEVICE_KEY],
+        encryption=user_input[CONF_ENCRYPTION],
+        encryption_key=user_input.get(CONF_ENCRYPTION_KEY),
+        session=async_get_clientsession(hass),
+    )
+    try:
+        await client.push(BarkPayload(title=user_input[CONF_NAME], body="Bark 已接入 Home Assistant"))
+    finally:
+        await client.async_close()
+
+
+class BarkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+    """Handle a Bark config flow."""
+
+    VERSION = 1
+
+    async def async_step_user(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            err = _validate_encryption_key(user_input)
+            if err is None:
+                try:
+                    await _send_test_push(self.hass, user_input)
+                except BarkEncryptionError:
+                    err = "invalid_encryption_key"
+                except BarkError:
+                    err = "test_push_failed"
+            if err is None:
+                return self.async_create_entry(
+                    title=user_input[CONF_NAME], data=user_input
+                )
+            errors["base"] = err
+        return self.async_show_form(
+            step_id="user", data_schema=_user_schema(), errors=errors
+        )
