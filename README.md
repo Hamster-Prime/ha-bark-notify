@@ -28,6 +28,28 @@
 
 ---
 
+## ✨ 截图
+
+<table>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/da82c04b-cd46-4eed-8039-e7ace2da1b2f" width="500" /></td>
+    <td><img src="https://github.com/user-attachments/assets/3bfaa02a-f5ab-44fa-b041-4414214bec13" width="500" /></td>
+  </tr>
+</table>
+
+![image](https://github.com/user-attachments/assets/ae000a47-d3d8-4fed-b65b-5f971ba14c30)
+
+<table width="100%">
+  <tr>
+    <td width="25%"><img src="https://github.com/user-attachments/assets/520508e8-c135-4b0b-b218-04b66f498b60" width="100%" /></td>
+    <td width="25%"><img src="https://github.com/user-attachments/assets/2c1956e9-ce6b-4165-9bc9-973d4ae604e6" width="100%" /></td>
+    <td width="25%"><img src="https://github.com/user-attachments/assets/eafcfe93-4d2b-4328-9e4b-b2ac92797ecc" width="100%" /></td>
+    <td width="25%"><img src="https://github.com/user-attachments/assets/b91d69a3-7d79-47ed-8eec-7c5bbb399130" width="100%" /></td>
+  </tr>
+</table>
+
+---
+
 ## 📦 安装
 
 ### 通过 HACS（推荐）
